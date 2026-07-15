@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { useAnimationFrame } from "@/hooks/useAnimationFrame.js";
-import { useResizeObserver } from "@/hooks/useResizeObserver.js";
+import { measureDevicePixelSize, useResizeObserver } from "@/hooks/useResizeObserver.js";
 import { useWebGPUDevice } from "@/hooks/useWebGPUDevice.js";
 import { configureContext } from "@/lib/webgpu/context.js";
 import WebGPUUnsupported from "./WebGPUUnsupported.jsx";
@@ -34,6 +34,17 @@ export default function WebGPUCanvas({ createRenderer, className = "", controlle
     const context = configureContext(canvas, device, format);
     const renderer = createRenderer({ device, context, format, canvas });
     rendererRef.current = renderer ?? null;
+
+    // The resize observer below only fires again on a future size change —
+    // it doesn't retroactively report the size it saw before this renderer
+    // existed. Size the canvas and call resize() with the current size now,
+    // so renderers that gate frame() on e.g. a depth texture being ready
+    // (anything sized in resize()) don't wait forever for a resize that may
+    // never come.
+    const { width, height } = measureDevicePixelSize(canvas);
+    canvas.width = width;
+    canvas.height = height;
+    renderer?.resize?.(width, height);
 
     return () => {
       rendererRef.current?.destroy?.();

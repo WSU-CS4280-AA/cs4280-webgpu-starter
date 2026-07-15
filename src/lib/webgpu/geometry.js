@@ -56,3 +56,54 @@ export function createCubeGeometry(size = 1) {
     indexCount: indices.length,
   };
 }
+
+/**
+ * A standard latitude/longitude UV sphere, centered at the origin. Since
+ * every vertex sits on the sphere, its normal is just its position
+ * normalized — no per-face duplication needed the way the cube has.
+ *
+ * @param {number} [radius]
+ * @param {number} [latitudeBands] rings from pole to pole
+ * @param {number} [longitudeBands] segments around the equator
+ * @returns {{ positions: Float32Array, normals: Float32Array, uvs: Float32Array, indices: Uint16Array, vertexCount: number, indexCount: number }}
+ */
+export function createSphereGeometry(radius = 1, latitudeBands = 24, longitudeBands = 24) {
+  const positions = [];
+  const normals = [];
+  const uvs = [];
+  const indices = [];
+
+  for (let lat = 0; lat <= latitudeBands; lat++) {
+    const theta = (lat * Math.PI) / latitudeBands; // 0 (top pole) to PI (bottom pole)
+    const sinTheta = Math.sin(theta);
+    const cosTheta = Math.cos(theta);
+
+    for (let lon = 0; lon <= longitudeBands; lon++) {
+      const phi = (lon * 2 * Math.PI) / longitudeBands; // 0 to 2*PI around the equator
+      const x = Math.cos(phi) * sinTheta;
+      const y = cosTheta;
+      const z = Math.sin(phi) * sinTheta;
+
+      positions.push(radius * x, radius * y, radius * z);
+      normals.push(x, y, z);
+      uvs.push(lon / longitudeBands, lat / latitudeBands);
+    }
+  }
+
+  for (let lat = 0; lat < latitudeBands; lat++) {
+    for (let lon = 0; lon < longitudeBands; lon++) {
+      const a = lat * (longitudeBands + 1) + lon;
+      const b = a + longitudeBands + 1;
+      indices.push(a, b, a + 1, b, b + 1, a + 1);
+    }
+  }
+
+  return {
+    positions: new Float32Array(positions),
+    normals: new Float32Array(normals),
+    uvs: new Float32Array(uvs),
+    indices: new Uint16Array(indices),
+    vertexCount: positions.length / 3,
+    indexCount: indices.length,
+  };
+}
