@@ -1,0 +1,39 @@
+{
+  "name": "cs4280-webgpu-starter",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Starter repository for CS 4280 (Computer Graphics) — WebGPU + React infrastructure with graphics algorithms left for students to implement.",
+  "engines": {
+    "node": ">=20.19"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "coverage": "vitest run --coverage",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "ci": "npm run lint && npm run test -- --run && npm run build"
+  },
+  "dependencies": {
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-router-dom": "^7.18.1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.4",
+    "@tailwindcss/vite": "^4.3.2",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@vitejs/plugin-react": "^6.0.3",
+    "jsdom": "^29.1.1",
+    "tailwindcss": "^4.3.2",
+    "vite": "^8.1.4",
+    "vitest": "^4.1.10"
+  }
+}
