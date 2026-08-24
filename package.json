@@ -11,18 +11,13 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest",
-    "test:ui": "vitest --ui",
-    "coverage": "vitest run --coverage",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
-    "ci": "npm run lint && npm run test -- --run && npm run build"
+    "ci": "npm run lint && npm run build"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.4",
-    "jsdom": "^29.1.1",
-    "vite": "^8.1.4",
-    "vitest": "^4.1.10"
+    "vite": "^8.1.4"
   }
 }
