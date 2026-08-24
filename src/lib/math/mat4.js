@@ -56,6 +56,21 @@ export function multiplyVec4(m, v) {
   return out;
 }
 
+/** Left-to-right `reduce` of `multiply` over a list of matrices. */
+export function multiplyAll(matrices) {
+  return matrices.reduce((acc, m) => multiply(acc, m));
+}
+
+/** Transforms a 3-component point `[x, y, z]` (implicit `w = 1`) by `m`, returning the full `[x, y, z, w]` quadruple *before* any perspective divide. */
+export function transformPoint(m, p) {
+  return multiplyVec4(m, [p[0], p[1], p[2], 1]);
+}
+
+/** Divides `[x, y, z, w]` by `w` — clip space to normalized device coordinates. */
+export function perspectiveDivide(v) {
+  return [v[0] / v[3], v[1] / v[3], v[2] / v[3]];
+}
+
 export function transpose(m) {
   const out = new Float32Array(16);
   for (let row = 0; row < 4; row++) {

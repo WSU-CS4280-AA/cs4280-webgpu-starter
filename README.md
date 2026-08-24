@@ -1,18 +1,27 @@
 # CS 4280 — Computer Graphics (WebGPU Starter)
 
-A starter repository for CS 4280, built on WebGPU, React, and Vite. It
-provides the infrastructure — device setup, the render loop, buffer/shader
-helpers, a small math library, routing, and reusable UI controls — for the
-course's in-class activities and assignments, and leaves every graphics
-algorithm (transforms, lighting, texturing, curves, ray tracing, PBR, ...)
-for students to implement.
+A starter repository for CS 4280, built on plain JavaScript, WGSL, and
+Vite — no framework. It provides the infrastructure — device setup, the
+render loop, buffer/shader/texture helpers, and a small math library —
+and leaves every graphics algorithm (transforms, lighting, texturing,
+curves, ray tracing, PBR, ...) for you to implement.
+
+Start with the home page (`npm run dev`, then open the printed URL) —
+**Hello Canvas2D** and **Hello Triangle** run right there, side by side.
+Every later activity and assignment follows the exact same shape one of
+those two already shows in full — a persistent scene, resize handling, a
+render loop — just with (or without) a WebGPU device/pipeline layer
+underneath.
+
+`src/activities/` and `src/assignments/` are currently empty placeholders
+(each holds only a `.keep` file) — pages get built into them as the
+course progresses.
 
 ## Requirements
 
 - Node.js `>= 20.19`
 - A WebGPU-capable browser for actually running the app: Chrome or Edge
-  113+. (The app detects and gracefully reports unsupported browsers
-  rather than crashing.)
+  113+.
 
 ## Getting started
 
@@ -21,19 +30,16 @@ npm install
 npm run dev
 ```
 
-Then open the printed local URL. The home page lists the full 15-week
-schedule; the sidebar groups the same pages under "Activities" and
-"Assignments".
+Then open the printed local URL — the home page runs the two worked
+examples directly.
 
 ## Scripts
 
 | Script | Does |
 |---|---|
 | `npm run dev` | Start the Vite dev server. |
-| `npm run build` | Production build to `dist/`. |
+| `npm run build` | Production build to `dist/` (every page listed in `vite.config.js`'s `pages` array). |
 | `npm run preview` | Serve the production build locally. |
-| `npm test` | Run Vitest in watch mode. |
-| `npm run test -- --run` | Run Vitest once (CI mode). |
 | `npm run lint` | Check formatting/lint rules with Biome. |
 | `npm run lint:fix` | Same, applying safe fixes. |
 | `npm run ci` | `lint` + `test` + `build`, what CI runs. |
@@ -41,56 +47,66 @@ schedule; the sidebar groups the same pages under "Activities" and
 ## Project structure
 
 ```
+vite.config.js                 # lists every page for `npm run build`; sets `root: "src"`
+biome.json                       # lint/format config
+
 src/
-├── components/       # Layout, canvas, and form-control UI — all reusable
-│   ├── layout/        #   AppShell, Sidebar, ActivityPage
-│   ├── canvas/         #   WebGPUCanvas, WebGPUUnsupported, ErrorBoundary
-│   └── controls/       #   Slider, ColorPicker, ToggleButton, SelectControl, ControlPanel
-├── hooks/             # useWebGPUDevice, useAnimationFrame, useResizeObserver, usePointerDrag
+├── index.html              # home page — Hello Canvas2D + Hello Triangle, running side by side
+├── hello-canvas2d.js         # the Canvas2D example's full source
+├── hello-triangle.js          # the WebGPU example's full source
+├── hello-triangle.wgsl         # its WGSL shaders
+├── style.css                    # shared dark-theme styling for the home page
 ├── lib/
-│   ├── webgpu/         # context/buffer/shader/texture/geometry/blit helpers
-│   └── math/           # vec2/vec3/vec4/mat4 (implemented) + transforms/curves (TODO stubs)
-├── content/registry.js # single source of truth for routes + the 15-week schedule
-├── pages/             # Home (schedule table), NotFound
-├── activities/
-│   ├── hello-triangle/ # the one fully-worked example — read this first
-│   └── _template/       # copy this to add a new in-class activity
-└── assignments/
-    ├── a1-primitives/
-    ├── a2-transforms-camera/
-    ├── a3-lighting-antialiasing/
-    ├── a4-texture-mapping/
-    ├── a5-curves-splines/
-    ├── a6-raytracer/
-    └── a7-final-project/
+│   ├── math/                # vec2/vec3/vec4/mat4 (implemented) + transforms/curves (TODO stubs)
+│   ├── webgpu/               # context/buffer/shader/texture/geometry/blit helpers (implemented)
+│   ├── scenegraph/            # SceneNode — construction is given; traversal is a TODO stub
+│   └── image/                  # loadImage/sampleImage/storage (implemented) + palette/quantize/blockAverage (TODO stubs)
+├── activities/     # placeholder — one .keep file, nothing else yet
+└── assignments/    # placeholder — one .keep file, nothing else yet
 ```
 
-## How the pieces fit together
+Everything Vite serves/bundles lives under `src/`; `vite.config.js`,
+`package.json`, `biome.json`, and the rest of the tooling config stay at
+the project root, outside it. The `@` import alias points at `src/`, so
+`@/lib/webgpu/context.js` resolves to `src/lib/webgpu/context.js`.
 
-Every activity/assignment page follows the same shape:
+When an activity or assignment page does get built, it follows the same
+shape throughout this repo: `index.html` + `main.js` (+ `shaders.wgsl`
+where it uses WebGPU) — that's the whole page, one file to read top to
+bottom. Controls (sliders, buttons, selects) are plain HTML elements in
+`index.html`, wired up with `addEventListener` in `main.js` — no
+control-factory library, no virtual DOM, no router. `src/hello-canvas2d.js`
+and `src/hello-triangle.js` are worked examples of exactly this shape.
 
-- `index.jsx` renders `<ActivityPage>` with a `<WebGPUCanvas
-  createRenderer={createRenderer} controllerRef={rendererRef} />`, plus
-  whatever `<ControlPanel>` of controls it needs.
-- `renderer.js` exports `createRenderer({ device, context, format, canvas
-  })`, returning `{ resize?, frame(deltaSeconds, elapsedSeconds), destroy?
-  }` — `<WebGPUCanvas>` owns requesting the device, configuring the
-  canvas, and driving the resize/animation loop; the renderer's job is
-  only to draw. It may also expose extra methods (`setColor`, `addPoint`,
-  ...) that `index.jsx` calls via `controllerRef` to push UI state in.
-- `shaders.wgsl` holds the WGSL source, imported as text via Vite's
-  built-in `?raw` suffix.
+## What's implemented vs. what's yours to build
 
-See `src/activities/hello-triangle/` for this shape fully implemented
-end to end, and any `src/assignments/*/README.md` for what's provided
-vs. left as a TODO for that specific assignment.
+- **`src/lib/webgpu/`, `src/lib/image/{loadImage,sampleImage,storage}.js`**
+  — working infrastructure, not graded content.
+- **`src/lib/math/transforms.js`, `src/lib/math/curves.js`,
+  `src/lib/image/{palette,quantize,blockAverage}.js`** — every function
+  throws `"not implemented"`. These *are* Assignment 1, 2, and 5's actual
+  deliverables; implementing them is most of what those three assignments
+  ask for.
+- **`src/lib/scenegraph/SceneNode.js`** — construction/bookkeeping
+  (`addChild`, `setLocalTransform`, `find`) is given; `updateWorldTransforms()`
+  and `traverse()` throw — they're Assignment 4's "parent-child transform
+  inheritance, recursively traversed" deliverable. Assignment 7 reuses
+  the same file, so implementing it once for Assignment 4 covers both.
+- **`src/hello-canvas2d.js`, `src/hello-triangle.js`** — fully worked,
+  always. Not graded; read them.
 
 ## Adding a new activity or assignment
 
-1. Copy `src/activities/_template/` (see its `README.md`).
-2. Add an entry to `src/content/registry.js`'s `routes` array (and, if it
-   maps to a syllabus week, `schedule`).
-3. It shows up automatically in the sidebar and on the home page.
+There's no router and no shared page-registry file:
+
+1. Create the folder under `src/activities/` or `src/assignments/` and
+   give it `index.html` + `main.js` (+ `shaders.wgsl` if it uses WebGPU)
+   — see `src/hello-triangle.js`/`src/hello-triangle.wgsl` and
+   `src/hello-canvas2d.js` for the shape to follow, and `src/lib/` for
+   what infrastructure is already available to import.
+2. Add the new page's path to the `pages` array in `vite.config.js` (a
+   path relative to `src/`, e.g. `"activities/week03-transforms/
+   index.html"`), so `npm run build` includes it.
 
 ## License
 

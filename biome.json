@@ -18,10 +18,7 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "preset": "recommended",
-      "correctness": {
-        "useExhaustiveDependencies": "warn"
-      }
+      "preset": "recommended"
     }
   },
   "javascript": {
@@ -29,11 +26,6 @@
       "quoteStyle": "double",
       "semicolons": "always",
       "trailingCommas": "all"
-    }
-  },
-  "css": {
-    "parser": {
-      "tailwindDirectives": true
     }
   },
   "assist": {

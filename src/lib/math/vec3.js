@@ -49,3 +49,15 @@ export function lerp(a, b, t) {
 export function negate(a) {
   return [-a[0], -a[1], -a[2]];
 }
+
+// Outward-facing normal of the triangle (p0, p1, p2), right-hand rule:
+// normal = (p1 - p0) x (p2 - p0), normalized.
+export function triangleNormal(p0, p1, p2) {
+  return normalize(cross(sub(p1, p0), sub(p2, p0)));
+}
+
+// Volume of the parallelepiped spanned by a, b, c — zero exactly when the
+// three vectors are coplanar.
+export function scalarTriple(a, b, c) {
+  return dot(a, cross(b, c));
+}

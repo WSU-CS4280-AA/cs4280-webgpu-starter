@@ -58,6 +58,60 @@ export function createCubeGeometry(size = 1) {
 }
 
 /**
+ * Un-indexes an indexed mesh and recomputes one flat (per-triangle) normal
+ * for each of its 3 duplicated vertices, discarding whatever normals it
+ * had before — used by Assignment 4 to render the *same* mesh (e.g. a
+ * shared-vertex sphere, normally smooth-shaded) with faceted flat shading
+ * for comparison. The result has no index buffer: draw it with `draw()`
+ * instead of `drawIndexed()`.
+ *
+ * @param {{ positions: Float32Array, uvs?: Float32Array, indices: Uint16Array | Uint32Array }} mesh
+ * @returns {{ positions: Float32Array, normals: Float32Array, uvs?: Float32Array, vertexCount: number }}
+ */
+export function flattenGeometry(mesh) {
+  const { positions, uvs, indices } = mesh;
+  const triangleCount = indices.length / 3;
+  const outPositions = new Float32Array(triangleCount * 9);
+  const outNormals = new Float32Array(triangleCount * 9);
+  const outUvs = uvs ? new Float32Array(triangleCount * 6) : undefined;
+
+  for (let t = 0; t < triangleCount; t++) {
+    const triangleIndices = [indices[t * 3], indices[t * 3 + 1], indices[t * 3 + 2]];
+    const [a, b, c] = triangleIndices.map((i) => positions.subarray(i * 3, i * 3 + 3));
+
+    const abX = b[0] - a[0];
+    const abY = b[1] - a[1];
+    const abZ = b[2] - a[2];
+    const acX = c[0] - a[0];
+    const acY = c[1] - a[1];
+    const acZ = c[2] - a[2];
+    const nx = abY * acZ - abZ * acY;
+    const ny = abZ * acX - abX * acZ;
+    const nz = abX * acY - abY * acX;
+    const length = Math.hypot(nx, ny, nz) || 1;
+    const normal = [nx / length, ny / length, nz / length];
+
+    const corners = [a, b, c];
+    for (let v = 0; v < 3; v++) {
+      const outBase = (t * 3 + v) * 3;
+      outPositions.set(corners[v], outBase);
+      outNormals.set(normal, outBase);
+      if (outUvs) {
+        const sourceIndex = triangleIndices[v];
+        outUvs.set(uvs.subarray(sourceIndex * 2, sourceIndex * 2 + 2), (t * 3 + v) * 2);
+      }
+    }
+  }
+
+  return {
+    positions: outPositions,
+    normals: outNormals,
+    uvs: outUvs,
+    vertexCount: triangleCount * 3,
+  };
+}
+
+/**
  * A standard latitude/longitude UV sphere, centered at the origin. Since
  * every vertex sits on the sphere, its normal is just its position
  * normalized — no per-face duplication needed the way the cube has.
