@@ -12,7 +12,9 @@ import { defineConfig } from "vite";
 // index.html") for each one as it gets built.
 const pages = [
   "index.html",
-  "activities/pyramid-mvp/index.html"
+  "activities/pyramid-mvp/index.html",
+  "activities/pyramid-shaded/index.html",
+  "activities/sierpinski/index.html",
 ];
 
 // https://vite.dev/config/

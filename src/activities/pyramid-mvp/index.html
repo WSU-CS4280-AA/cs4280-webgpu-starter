@@ -111,6 +111,24 @@
       }
     `;
 
+    // --- CPU-side matrix math ---------------------------------------
+    // Column-major Float32Array(16), matching WGSL's mat4x4<f32> memory
+    // layout exactly (m[col * 4 + row]) so it can be uploaded as-is with
+    // no repacking. Each function below mirrors, entry for entry, the
+    // matrix that hello-pyramid's WGSL shader used to build on the GPU.
+
+    // function mat4Multiply(a, b) {
+    //   const out = new Float32Array(16);
+    //   for (let col = 0; col < 4; col++) {
+    //     for (let row = 0; row < 4; row++) {
+    //       let sum = 0;
+    //       for (let k = 0; k < 4; k++) sum += a[k * 4 + row] * b[col * 4 + k];
+    //       out[col * 4 + row] = sum;
+    //     }
+    //   }
+    //   return out;
+    // }
+
     function mat4RotationX(theta) {
       const cx = Math.cos(theta), sx = Math.sin(theta);
       // biome-ignore format: visually align the matrix as a 4x4 grid
