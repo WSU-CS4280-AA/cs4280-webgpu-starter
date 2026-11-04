@@ -21,7 +21,7 @@
 
   <script type="module">
     import { initializeWebGPU } from "../../lib/webgpu.js";
-    import { add, sub, scale, dot, cross, length, normalize, negate } from "@/lib/math/vec3.js";
+    import { add, sub, scale, dot, cross, length, normalize, negate, scalarTriple } from "@/lib/math/vec3.js";
 
     // ---------- Camera ----------
     const nx = 640, ny = 400;
@@ -60,7 +60,105 @@
       };
     }
 
-    const scene = [Floor(3, 1)];
+    // (p - c)·(p - c) - R² = 0
+    function Sphere(c, R, color, rho = 0) {
+      return {
+        rho, // reflectivity
+        hit(ray, t0, t1) {
+          const { o: e, d } = ray;
+          const A = dot(d, d);
+          const Bp = dot(d, sub(e, c)); // B' = B / 2
+          const C = dot(sub(e, c), sub(e, c)) - R * R;
+          const disc = Bp * Bp - A * C;
+          if (disc < 0) return MISS;
+
+          let t = (-Bp - Math.sqrt(disc)) / A;
+          if (t < t0 || t > t1) t = (-Bp + Math.sqrt(disc)) / A;
+          if (t < t0 || t > t1) return MISS;
+
+          const x = add(e, scale(d, t));
+          return { s: this, t, n: scale(sub(x, c), 1 / R) };
+        },
+        kd: () => color,
+      };
+    }
+
+    // Axis-aligned box: the overlap of three slabs
+    function Box(pmin, pmax, color) {
+      const c = scale(add(pmin, pmax), 0.5);
+      const h = scale(sub(pmax, pmin), 0.5);
+
+      return {
+        hit(ray, t0, t1) {
+          const { o: e, d } = ray;
+          let tnear = -Infinity, tfar = Infinity;
+          for (let k = 0; k < 3; k++) {
+            const a = 1 / d[k];
+            let tmin = a * (pmin[k] - e[k]);
+            let tmax = a * (pmax[k] - e[k]);
+            if (a < 0) [tmin, tmax] = [tmax, tmin];
+            tnear = Math.max(tnear, tmin);
+            tfar = Math.min(tfar, tmax);
+          }
+          if (tnear > tfar) return MISS;
+
+          const t = tnear > t0 ? tnear : tfar;
+          if (!(t > t0 && t <= t1)) return MISS; // also rejects NaN
+
+          // Face normal: the axis k with the largest |x_k - c_k| / h_k
+          const x = add(e, scale(d, t));
+          let k = 0;
+          for (let m = 1; m < 3; m++) {
+            if (Math.abs(x[m] - c[m]) / h[m] > Math.abs(x[k] - c[k]) / h[k]) k = m;
+          }
+          const n = [0, 0, 0];
+          n[k] = Math.sign(x[k] - c[k]);
+          return { s: this, t, n };
+        },
+        kd: () => color,
+      };
+    }
+
+    // e + t d = a + β(b - a) + γ(c - a), i.e. [a-b | a-c | d] [β γ t]ᵀ = a - e
+    // Cramer's rule, with det(x | y | z) = scalarTriple(x, y, z)
+    function Triangle(a, b, c, color) {
+      const n = normalize(cross(sub(b, a), sub(c, a)));
+
+      return {
+        hit(ray, t0, t1) {
+          const { o: e, d } = ray;
+          const ab = sub(a, b), ac = sub(a, c), ae = sub(a, e);
+          const M = scalarTriple(ab, ac, d);
+          if (Math.abs(M) < 1e-12) return MISS;
+
+          const t = scalarTriple(ab, ac, ae) / M;
+          if (t < t0 || t > t1) return MISS;
+          const gamma = scalarTriple(ab, ae, d) / M;
+          if (gamma < 0 || gamma > 1) return MISS;
+          const beta = scalarTriple(ae, ac, d) / M;
+          if (beta < 0 || beta > 1 - gamma) return MISS;
+
+          return { s: this, t, n };
+        },
+        kd: () => color,
+      };
+    }
+
+    function Tetrahedron(p0, p1, p2, p3, color) {
+      return [
+        Triangle(p0, p1, p2, color),
+        Triangle(p0, p1, p3, color),
+        Triangle(p1, p2, p3, color),
+        Triangle(p2, p0, p3, color),
+      ];
+    }
+
+    const scene = [
+      Floor(3, 1),
+      Sphere([0, 1, 0], 1, [0.9, 0.2, 0.2], 0.7),
+      Box([-2.6, 0, -0.6], [-1.6, 1, 0.4], [0.2, 0.5, 0.9]),
+      ...Tetrahedron([1.78, 0, 1.38], [1.31, 0, -0.2], [2.91, 0, 0.17], [2, 1.6, 0.45], [0.95, 0.75, 0.2]),
+    ];
 
     function sceneHit(ray, t0, t1) {
       let closest = MISS;
@@ -79,8 +177,9 @@
     const alpha = 0.15;           // ambient fraction
     const ks = 0.4, p = 32;       // highlight
     const eps = 1e-4, delta = 1e-3;
+    const maxDepth = 3;
 
-    function shadeRay(ray, t0, t1) {
+    function shadeRay(ray, t0, t1, depth = 0) {
       const rec = sceneHit(ray, t0, t1);
       if (rec.t === Infinity) return background;
       const x = add(ray.o, scale(ray.d, rec.t));
@@ -101,6 +200,14 @@
       if (!inShadow && dot(n, l) > 0) {
         const spec = ks * Math.max(0, dot(n, h)) ** p;
         c = add(scale(kd, alpha + (1 - alpha) * dot(n, l)), [spec, spec, spec]);
+      }
+
+      // Mirror: r = d - 2(d·n)n, blended as c = (1 - rho) c + rho c_reflected
+      const rho = rec.s.rho;
+      if (rho > 0 && depth < maxDepth) {
+        const rdir = sub(ray.d, scale(n, 2 * dot(ray.d, n)));
+        const mirrorRay = { o: add(x, scale(n, delta)), d: rdir };
+        c = add(scale(c, 1 - rho), scale(shadeRay(mirrorRay, eps, Infinity, depth + 1), rho));
       }
       return c;
     }
