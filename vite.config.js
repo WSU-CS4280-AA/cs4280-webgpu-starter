@@ -21,6 +21,7 @@ const pages = [
   "activities/globe/index.html",
   "activities/sierpinski/index.html",
   "activities/splines/index.html",
+  "activities/rtracer/index.html",
 ];
 
 // https://vite.dev/config/
