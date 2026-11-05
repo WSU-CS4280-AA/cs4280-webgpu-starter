@@ -290,7 +290,7 @@
           vertex: { module: shaderModule, entryPoint },
           fragment: { module: shaderModule, entryPoint: 'fs_main', targets: [{ format }] },
           primitive: { topology },
-          // animate() always attaches a depth buffer, so the pipeline must declare one.
+          // animate() attaches a depth buffer by default, so the pipeline must declare one.
           depthStencil: { format: 'depth24plus', depthWriteEnabled: false, depthCompare: 'always' }
         });
         const curvePipeline = makePipeline('vs_curve', 'line-strip');
