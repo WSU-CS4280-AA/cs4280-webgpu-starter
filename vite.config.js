@@ -15,6 +15,7 @@ const pages = [
   "activities/pyramid-mvp/index.html",
   "activities/pyramid-shaded/index.html",
   "activities/sphere-shaded/index.html",
+  "activities/sphere-pbr/index.html",
   "activities/snowmen/index.html",
   "activities/snowmen-shader-pattern/index.html",
   "activities/snowmen-canvas-texture/index.html",
@@ -22,6 +23,7 @@ const pages = [
   "activities/sierpinski/index.html",
   "activities/splines/index.html",
   "activities/rtracer/index.html",
+  "activities/pathtracer/index.html",
 ];
 
 // https://vite.dev/config/
